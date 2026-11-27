@@ -40,35 +40,43 @@ class CatatActivity : AppCompatActivity() {
         }
 
         val dataJenis = intent.getStringExtra("jenis")
-        if (dataJenis != null){
+        if (dataJenis != null) {
             jenis = dataJenis
         }
         binding.tvJudulCatat.text = "Catat $jenis"
 
-        sp = getSharedPreferences("data_sp",MODE_PRIVATE)
+        sp = getSharedPreferences("data_sp", MODE_PRIVATE)
         val gson = Gson()
 
-        val isiKategori = sp.getString("spKategori",null)
+        val isiKategori = sp.getString("spKategori", null)
         val typeKategori = object : TypeToken<ArrayList<dcKategori>>() {}.type
-        if (isiKategori != null){
+        if (isiKategori != null) {
             val arKategori: ArrayList<dcKategori> = gson.fromJson(isiKategori, typeKategori)
-            for (k in arKategori){
-                if (k.jenis == jenis){
+            for (k in arKategori) {
+                if (k.jenis == jenis) {
                     _listKategori.add(k.nama)
                 }
             }
         }
-        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_spinner_item, _listKategori)
+        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, _listKategori)
         binding.spKategori.adapter = adapterSpinner
 
-        val isiSP = sp.getString("sp$jenis",null)
+        val isiSP = sp.getString("sp$jenis", null)
         val type = object : TypeToken<ArrayList<dcTransaksi>>() {}.type
-        if (isiSP != null){
-            _arTransaksi = gson.fromJson(isiSP,type)
+        if (isiSP != null) {
+            _arTransaksi = gson.fromJson(isiSP, type)
+        }
+        for (t in _arTransaksi) {
+            t.jenis = jenis
         }
 
         tampilKanData()
         hitungTotal()
+
+        val posisi = intent.getIntExtra("posisi", -1)
+        if (posisi != -1 && posisi < _arTransaksi.size) {
+            isiForm(posisi)
+        }
 
         binding.etTanggal.setOnClickListener {
             pilihTanggal()
@@ -91,7 +99,8 @@ class CatatActivity : AppCompatActivity() {
                     tanggal = tanggal,
                     kategori = kategori,
                     jumlah = jumlah.toInt(),
-                    keterangan = keterangan
+                    keterangan = keterangan,
+                    jenis = jenis
                 )
 
                 if (posisiEdit == -1) {
@@ -107,10 +116,10 @@ class CatatActivity : AppCompatActivity() {
                 hitungTotal()
                 resetForm()
             }
+        }
 
-            binding.btnBatal.setOnClickListener {
-                resetForm()
-            }
+        binding.btnBatal.setOnClickListener {
+            resetForm()
         }
     }
 
@@ -120,17 +129,16 @@ class CatatActivity : AppCompatActivity() {
         val month = calendar.get(Calendar.MONTH)
         val day = calendar.get(Calendar.DAY_OF_MONTH)
 
-        val datePickerDialog =
-            DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
-                binding.etTanggal.setText("$selectedDay/${selectedMonth + 1}/$selectedYear")
-            }, year, month, day)
+        val datePickerDialog = DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
+            binding.etTanggal.setText("$selectedDay/${selectedMonth + 1}/$selectedYear")
+        }, year, month, day)
         datePickerDialog.show()
     }
 
     private fun simpanKeSP() {
         val gson = Gson()
         val json = gson.toJson(_arTransaksi)
-        sp.edit{
+        sp.edit {
             putString("sp$jenis", json)
         }
     }
@@ -141,6 +149,19 @@ class CatatActivity : AppCompatActivity() {
             total += t.jumlah
         }
         binding.tvTotal.text = "Total $jenis : Rp $total"
+    }
+
+    private fun isiForm(pos: Int) {
+        val data = _arTransaksi[pos]
+        posisiEdit = pos
+        binding.etTanggal.setText(data.tanggal)
+        binding.etJumlah.setText(data.jumlah.toString())
+        binding.etKeterangan.setText(data.keterangan)
+        val idx = _listKategori.indexOf(data.kategori)
+        if (idx >= 0) {
+            binding.spKategori.setSelection(idx)
+        }
+        binding.btnSimpan.text = "Update"
     }
 
     private fun resetForm() {
@@ -163,16 +184,7 @@ class CatatActivity : AppCompatActivity() {
         val adapterTrx = adapterTransaksi(_arTransaksi)
         adapterTrx.setOnItemClickCallBack(object : adapterTransaksi.OnItemClickCallBack {
             override fun onItemClicked(pos: Int) {
-                val data = _arTransaksi[pos]
-                posisiEdit = pos
-                binding.etTanggal.setText(data.tanggal)
-                binding.etJumlah.setText(data.jumlah.toString())
-                binding.etKeterangan.setText(data.keterangan)
-                val idx = _listKategori.indexOf(data.kategori)
-                if (idx >= 0) {
-                    binding.spKategori.setSelection(idx)
-                }
-                binding.btnSimpan.text = "Update"
+                isiForm(pos)
             }
 
             override fun delData(pos: Int) {
