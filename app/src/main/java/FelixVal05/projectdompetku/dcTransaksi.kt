@@ -4,5 +4,6 @@ data class dcTransaksi(
     var tanggal: String,
     var kategori: String,
     var jumlah: Int,
-    var keterangan: String
+    var keterangan: String,
+    var jenis : String = ""
 )
