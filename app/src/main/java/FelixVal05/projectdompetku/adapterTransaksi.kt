@@ -39,7 +39,12 @@ class adapterTransaksi(private val listTransaksi: ArrayList<dcTransaksi>) :
         holder.binding.tvKategori.text = transaksi.kategori
         holder.binding.tvTanggal.text = transaksi.tanggal
         holder.binding.tvKeterangan.text = transaksi.keterangan
-        holder.binding.tvJumlah.text = "Rp ${transaksi.jumlah}"
+        if (transaksi.jenis == "Pengeluaran") {
+            holder.binding.tvJumlah.text = "- Rp ${transaksi.jumlah}"
+        }
+        else {
+            holder.binding.tvJumlah.text = "+ Rp ${transaksi.jumlah}"
+        }
 
         holder.itemView.setOnClickListener {
             val currentPosition = holder.bindingAdapterPosition
